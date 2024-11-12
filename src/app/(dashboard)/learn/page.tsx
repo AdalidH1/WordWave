@@ -2,30 +2,78 @@ import { FeedWrapper } from '@/components/feed-wrapper'
 import { StickyWrapper } from '@/components/sticky-wrapper'
 import { Header } from './header'
 import { UserProgress } from '@/components/user-progress'
-import { getUserProgress } from '@/db/queries'
 import { redirect } from "next/navigation";
-import { ICourse } from '@/models/Courses';
+import { getCourseProgress, getLessonPercentage, getUnits, getUserProgress, getUserSubscription } from '../../../../db/queries';
+import { Unit } from './unit';
+import { lessons, units as unitsSchema } from '../../../../db/schema'
+import { Promo } from '@/components/promo';
+import { Quests } from '@/components/quests';
 
 const DashboardPage = async () => {
-  const userProgressData = await getUserProgress()
+  const userProgressData = getUserProgress()
+  const unitsData = getUnits()
+  const courseProgressData = getCourseProgress()
+  const lessonPercentageData = getLessonPercentage()
+  const userSubsriptionData = getUserSubscription()
 
-  if (!userProgressData || !userProgressData.activeCourseId) {
+  const [
+    userProgress,
+    units,
+    courseProgress,
+    lessonPercentage,
+    userSubsription
+  ] = await Promise.all([
+    userProgressData,
+    unitsData,
+    courseProgressData,
+    lessonPercentageData,
+    userSubsriptionData
+  ])
+
+  if (!userProgress || !userProgress.activeCourse) {
     redirect("/courses")
   }
 
-  const activeCourse = userProgressData.activeCourseId as ICourse;
+  if (!courseProgress) {
+    redirect("/courses")
+  }
+
+  const isPro = !!userSubsription?.isActive
 
   return (
     <div className='flex flex-row-reverse gap-[48px] px-6'>
       <StickyWrapper>
         <UserProgress 
-          activeCourse={activeCourse}
-          hearts={userProgressData.hearts} 
-          points={userProgressData.points}
-          hasActiveSubscription={false} />
+          activeCourse={userProgress.activeCourse}
+          hearts={userProgress.hearts} 
+          points={userProgress.points}
+          hasActiveSubscription={isPro} />
+          {!isPro && (
+            <Promo />
+          )}
+          <Quests 
+            points={userProgress.points}
+          />
       </StickyWrapper>
       <FeedWrapper>
-        <Header title={activeCourse.title} />
+        <Header title={userProgress.activeCourse.title} />
+        {units.map((unit) => (
+          <div key={unit.id} className='mb-10'>
+            <Unit
+              id={unit.id}
+              order={unit.order}
+              description={unit.description}
+              title={unit.title}
+              lessons={unit.lessons}
+              activeLesson={courseProgress.activeLesson as
+                | (typeof lessons.$inferSelect & {
+                    unit: typeof unitsSchema.$inferSelect;
+                  })
+                | undefined}
+              activeLessonPercentage={lessonPercentage}
+            />
+          </div>
+        ))}
       </FeedWrapper>
     </div>
   )

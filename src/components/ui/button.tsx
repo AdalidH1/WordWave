@@ -9,6 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        locked: "bg-neutral-200 text-white hover:bg-neutral-200/90 border-neutral-400 border-b-4 active:border-b-0",
         default: "bg-white text-black border-slate-200 border-2 border-b-4 active:border-b-2 hover:bg-slate-100 text-slate-500",
         primary: "bg-purple-400 text-white hover:bg-purple-400/90 border-purple-500 border-b-4 active:border-b-0",
         primaryOutline: "bg-white text-purple-500 hover:bg-slate-100",
